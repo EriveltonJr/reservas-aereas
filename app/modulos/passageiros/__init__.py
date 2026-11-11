@@ -1,1 +1,1 @@
-"""Passageiros: implemente registrar(container) e registre o serviço."""
+"""Passageiros: implemente registrar(app, bus, container) e registre o serviço."""

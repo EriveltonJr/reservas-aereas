@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from decimal import Decimal
 
 
 class Evento:
@@ -12,23 +11,21 @@ class Evento:
 class ReservaCriada(Evento):
     reserva_id: int
     voo_id: int
-    codigo_assento: str
+    assento: str
     passageiro_id: int
-    valor: Decimal
 
 
 @dataclass(frozen=True)
 class AssentoBloqueado(Evento):
     reserva_id: int
     voo_id: int
-    codigo_assento: str
+    assento: str
+    valor: float
 
 
 @dataclass(frozen=True)
 class AssentoIndisponivel(Evento):
     reserva_id: int
-    voo_id: int
-    codigo_assento: str
     motivo: str
 
 
@@ -36,7 +33,7 @@ class AssentoIndisponivel(Evento):
 class PagamentoAprovado(Evento):
     reserva_id: int
     pagamento_id: int
-    valor: Decimal
+    valor: float
 
 
 @dataclass(frozen=True)
@@ -48,13 +45,13 @@ class PagamentoRecusado(Evento):
 @dataclass(frozen=True)
 class ReservaConfirmada(Evento):
     reserva_id: int
+    passageiro_id: int
+    valor: float
 
 
 @dataclass(frozen=True)
 class LiberarAssento(Evento):
     reserva_id: int
-    voo_id: int
-    codigo_assento: str
 
 
 @dataclass(frozen=True)
@@ -66,4 +63,5 @@ class CancelarReserva(Evento):
 @dataclass(frozen=True)
 class ReservaCancelada(Evento):
     reserva_id: int
+    passageiro_id: int
     motivo: str

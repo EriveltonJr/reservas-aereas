@@ -47,6 +47,24 @@ def sessao_de(fabrica: sessionmaker[Session]) -> Generator[Session, None, None]:
         sessao.close()
 
 
+_sessoes: sessionmaker[Session] | None = None
+
+
+def configurar(url: str | None = None) -> Engine:
+    global _sessoes
+    engine = criar_engine(url)
+    _sessoes = criar_sessoes(engine)
+    return engine
+
+
+@contextmanager
+def sessao() -> Generator[Session, None, None]:
+    if _sessoes is None:
+        configurar()
+    with sessao_de(_sessoes) as atual:
+        yield atual
+
+
 def _ativar_chaves_estrangeiras(engine: Engine) -> None:
     @event.listens_for(engine, "connect")
     def _ao_conectar(conexao, _) -> None:

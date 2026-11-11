@@ -1,0 +1,19 @@
+from collections.abc import Iterable
+
+from fastapi import FastAPI
+
+from app.banco import configurar, criar_tabelas
+from app.barramento import Barramento
+from app.contratos import Container, PassageiroFalso, carregar_modulos
+
+
+def criar_app(url: str | None = None, modulos: Iterable[str] | None = None) -> FastAPI:
+    engine = configurar(url)
+    bus = Barramento()
+    container = Container(engine, bus, PassageiroFalso())
+    app = FastAPI(title="Reservas Aéreas")
+    app.state.container = container
+    app.state.bus = bus
+    carregar_modulos(app, bus, container, modulos)
+    criar_tabelas(engine)
+    return app

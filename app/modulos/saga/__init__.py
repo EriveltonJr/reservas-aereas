@@ -1,1 +1,1 @@
-"""Saga: implemente registrar(container) e coordene compensações via eventos."""
+"""Saga: implemente registrar(app, bus, container) e coordene compensações via eventos."""
