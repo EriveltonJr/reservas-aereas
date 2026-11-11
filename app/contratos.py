@@ -20,11 +20,11 @@ ORDEM_MODULOS = (
 
 class PassageirosContrato(Protocol):
     def obter_identificador(self, nome: str, documento: str) -> int:
-        """Retorna o identificador do passageiro. Única chamada direta entre módulos."""
+        """Obtém o identificador do passageiro."""
 
 
 class PassageiroFalso:
-    """Substituto até o módulo Passageiros de Liedson chamar registrar_passageiros."""
+    """Implementação provisória substituível pelo serviço de Passageiros."""
 
     def __init__(self) -> None:
         self._por_documento: dict[str, int] = {}
@@ -77,11 +77,7 @@ def aplicar_registro(modulo: object, container: Container) -> bool:
 
 
 def carregar_modulos(container: Container) -> list[str]:
-    """Importa app.modulos e executa registrar(container) quando o pacote definir essa função.
-
-    Liedson: coloque registrar(container) no __init__ do módulo. Não altere app/main.py.
-    Leia container.passageiros na hora da reserva, não durante o registro.
-    """
+    """Descobre os módulos e executa registrar(container), quando disponível."""
     import app.modulos as pacote
 
     encontrados = {modulo.name for modulo in pkgutil.iter_modules(pacote.__path__)}

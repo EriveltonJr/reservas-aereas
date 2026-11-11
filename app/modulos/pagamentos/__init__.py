@@ -1,5 +1,1 @@
-"""Pagamentos. Ponto de implementação do Liedson.
-
-Defina registrar(container). Assine AssentoBloqueado e publique
-PagamentoAprovado ou PagamentoRecusado.
-"""
+"""Pagamentos: implemente registrar(container), trate AssentoBloqueado e publique o resultado."""

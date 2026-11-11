@@ -1,4 +1,1 @@
-"""Saga. Ponto de implementação do Liedson.
-
-Defina registrar(container). Na compensação, publique LiberarAssento e CancelarReserva.
-"""
+"""Saga: implemente registrar(container) e coordene compensações via eventos."""
