@@ -1,0 +1,40 @@
+# Ambientes virtuais
+.venv/
+venv/
+env/
+ENV/
+
+# Bancos locais
+*.db
+*.sqlite
+*.sqlite3
+
+# Segredos e credenciais
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets.json
+
+# Caches e artefatos de teste
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Ferramentas e sistema
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.log
