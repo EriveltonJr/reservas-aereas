@@ -30,6 +30,7 @@ class PassageiroFalso:
         self._por_documento: dict[str, int] = {}
 
     def obter_identificador(self, nome: str, documento: str) -> int:
+        del nome
         documento_limpo = documento.strip()
         if not documento_limpo:
             raise ValueError("documento do passageiro é obrigatório")

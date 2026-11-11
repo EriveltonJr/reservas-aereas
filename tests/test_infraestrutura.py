@@ -1,4 +1,5 @@
 from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
 from sqlalchemy import text
@@ -63,6 +64,7 @@ def test_barramento_propaga_erro_do_tratador():
     barramento = Barramento()
 
     def falhar(_evento: ReservaCriada) -> None:
+        del _evento
         raise RuntimeError("falha de teste")
 
     barramento.inscrever(ReservaCriada, falhar)
@@ -89,16 +91,34 @@ def test_passageiro_falso_e_substituido_no_container():
     assert container.passageiros.obter_identificador("Ana", "123") == 99
 
 
-def test_carregar_modulos_executa_somente_quem_define_registrar():
+def test_carregar_modulos_executa_somente_quem_define_registrar(monkeypatch):
     container = criar_container("sqlite:///:memory:")
+    registrados = []
 
     class ModuloSemRegistro:
         pass
 
     class ModuloComRegistro:
         def registrar(self, destino: Container) -> None:
+            registrados.append("passageiros")
             destino.registrar_passageiros(PassageiroFalso())
 
     assert aplicar_registro(ModuloSemRegistro(), container) is False
     assert aplicar_registro(ModuloComRegistro(), container) is True
-    assert carregar_modulos(container) == []
+    registrados.clear()
+
+    modulos = {
+        "app.modulos.voos": ModuloSemRegistro(),
+        "app.modulos.passageiros": ModuloComRegistro(),
+    }
+    monkeypatch.setattr(
+        "app.contratos.pkgutil.iter_modules",
+        lambda _: [
+            SimpleNamespace(name="voos"),
+            SimpleNamespace(name="passageiros"),
+        ],
+    )
+    monkeypatch.setattr("app.contratos.importlib.import_module", lambda nome: modulos[nome])
+
+    assert carregar_modulos(container) == ["passageiros"]
+    assert registrados == ["passageiros"]

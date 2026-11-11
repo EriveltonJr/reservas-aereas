@@ -1,5 +1,5 @@
 import os
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine, event
@@ -36,7 +36,7 @@ def criar_tabelas(engine: Engine) -> None:
 
 
 @contextmanager
-def sessao_de(fabrica: sessionmaker[Session]) -> Iterator[Session]:
+def sessao_de(fabrica: sessionmaker[Session]) -> Generator[Session, None, None]:
     sessao = fabrica()
     try:
         yield sessao
@@ -49,7 +49,7 @@ def sessao_de(fabrica: sessionmaker[Session]) -> Iterator[Session]:
 
 def _ativar_chaves_estrangeiras(engine: Engine) -> None:
     @event.listens_for(engine, "connect")
-    def _ao_conectar(conexao, _registro) -> None:
+    def _ao_conectar(conexao, _) -> None:
         cursor = conexao.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
