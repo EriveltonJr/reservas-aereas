@@ -54,9 +54,13 @@ Os eventos são dataclasses imutáveis definidos em `app/eventos.py`.
 | `CancelarReserva` | `reserva_id`, `motivo` | Saga | Reservas |
 | `ReservaCancelada` | `reserva_id`, `passageiro_id`, `motivo` | Reservas | Notificações |
 
+Qualquer módulo pode consumir outros eventos além dos listados, se precisar.
+
 Voos responde a `ReservaCriada` com `AssentoBloqueado` ou `AssentoIndisponivel`
 (motivos `"Voo ou assento inexistente"` ou `"Assento já ocupado"`).
 `LiberarAssento` sem assento bloqueado não gera erro.
+
+Cada módulo trata os próprios erros dentro dos seus tratadores de eventos.
 
 ## Rotas
 
@@ -79,7 +83,7 @@ Corpo do `POST /voos`: `codigo` (3 a 20 letras e números, salvo em maiúsculas)
 
 | Método | Rota | Resposta |
 |---|---|---|
-| `POST` | `/reservas` | 201 com a reserva `PENDENTE`; publica `ReservaCriada` |
+| `POST` | `/reservas` | 201 com a reserva; publica `ReservaCriada` (status `PENDENTE` só enquanto Pagamentos e Saga não existirem) |
 | `GET` | `/reservas/{reserva_id}` | reserva; 404 se não existe |
 
 Corpo do `POST /reservas`: `voo_id` (maior que 0), `assento` (formato `12A`) e
@@ -87,3 +91,20 @@ Corpo do `POST /reservas`: `voo_id` (maior que 0), `assento` (formato `12A`) e
 hífen) e `email` (até 120). A reserva devolvida tem `id`, `voo_id`, `assento`,
 `passageiro_id`, `status` (`PENDENTE`, `CONFIRMADA` ou `CANCELADA`), `valor` e
 `motivo_cancelamento`.
+
+## Módulos do Liedson
+
+O que está abaixo é o mínimo para os módulos se encaixarem no sistema. Tabelas,
+colunas, rotas, mensagens e a organização interna de cada módulo ficam a
+critério de quem implementa.
+
+| Módulo | Precisa fazer |
+|---|---|
+| Passageiros | Registrar um serviço com `criar_ou_validar(DadosPassageiro) -> int` via `container.registrar_passageiros(servico)`. O mesmo documento deve sempre devolver o mesmo id. |
+| Pagamentos | Consumir `AssentoBloqueado` e responder com `PagamentoAprovado` ou `PagamentoRecusado`. A regra que decide fica livre, desde que seja possível provocar uma recusa para demonstrar a compensação. |
+| Saga | Ao receber `AssentoIndisponivel`, publicar `CancelarReserva`. Ao receber `PagamentoRecusado`, publicar `LiberarAssento` e `CancelarReserva`. |
+| Notificações | Reagir a `ReservaConfirmada` e `ReservaCancelada` avisando o passageiro, mesmo que de forma simulada (registro, log...). |
+
+Notificações recebe só o `passageiro_id`. Pelas regras do projeto, a única
+chamada direta entre módulos é Reservas → Passageiros, então os avisos podem ser
+registrados pelo `passageiro_id`.
