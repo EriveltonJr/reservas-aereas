@@ -7,7 +7,7 @@ por um barramento interno de eventos. O fluxo da reserva é coordenado por uma
 **saga**, que desfaz os passos anteriores quando o assento está indisponível
 ou o pagamento é recusado.
 
-> Projeto acadêmico de **Francisco Erivelton** e **Liedson**.
+> Projeto acadêmico de **Francisco Erivelton** e **Liedson**. A interface web se chama **ELVoo** (**E**rivelton + **L**iedson + Voo).
 
 ## Objetivos
 
@@ -21,14 +21,14 @@ ou o pagamento é recusado.
 
 | Integrante | Responsável por |
 |---|---|
-| **Francisco Erivelton** | Infraestrutura (banco, barramento de eventos, contratos e carregamento dos módulos), módulos **Voos** e **Reservas**, fixture e testes, documentação dos contratos e implantação na **AWS** e na **Azure** |
+| **Francisco Erivelton** | Infraestrutura (banco, barramento de eventos, contratos e carregamento dos módulos), módulos **Voos** e **Reservas**, interface web **ELVoo**, fixture e testes, documentação dos contratos e implantação na **AWS** e na **Azure** |
 | **Liedson** | Módulos **Passageiros** (cadastro e validação), **Pagamentos** (aprovação ou recusa), **Notificações** (avisos ao passageiro) e **Saga** (coordenação e compensações) |
 
 ## Arquitetura
 
 ```mermaid
 flowchart LR
-    Cliente([Cliente]) --> API[FastAPI]
+    Cliente([Navegador · ELVoo]) --> API[FastAPI]
     API --> Voos & Reservas & Passageiros
     Reservas -- criar_ou_validar --> Passageiros
     Voos & Reservas & Pagamentos & Notificacoes[Notificações] & Saga <--> Bus{{Barramento de eventos}}
@@ -88,7 +88,7 @@ Campos e regras completas: [`docs/CONTRATOS.md`](docs/CONTRATOS.md).
 
 ## Tecnologias
 
-Python 3.12+ · FastAPI · Pydantic · SQLAlchemy 2 · SQLite · pytest · AWS · Azure
+Python 3.12+ · FastAPI · Pydantic · SQLAlchemy 2 · SQLite · pytest · HTML, CSS e JavaScript · AWS · Azure
 
 ## Como executar
 
@@ -101,10 +101,26 @@ pip install -r requirements.txt
 python -m uvicorn app.main:criar_app --factory --reload
 ```
 
-Documentação interativa (Swagger): **http://127.0.0.1:8000/docs**
+| Endereço | O que é |
+|---|---|
+| **http://127.0.0.1:8000/** | Interface web ELVoo |
+| **http://127.0.0.1:8000/docs** | Documentação interativa da API (Swagger) |
 
 O banco padrão é o arquivo `reservas.db`. Para usar outro, defina
 `RESERVAS_DATABASE_URL`.
+
+## Interface web
+
+A página fica em [`app/web/index.html`](app/web/index.html), em um único arquivo
+com HTML, CSS e JavaScript, sem bibliotecas. Ela usa apenas as rotas da API.
+
+- Números ao vivo: voos, assentos livres e destinos.
+- Busca por origem, destino e preço máximo.
+- Mapa da cabine para escolher o assento; os ocupados ficam bloqueados.
+- Formulário do passageiro com as mesmas validações da API.
+- Bilhete da reserva com o status, atualizado automaticamente enquanto estiver `PENDENTE`.
+- Consulta de reserva pelo número, com as reservas recentes salvas no navegador.
+- Área de demonstração para cadastrar voos.
 
 ## API
 
@@ -144,6 +160,7 @@ conferir os que foram gerados.
 | `test_infraestrutura.py` | Sessões, barramento, contratos e carregamento de módulos |
 | `test_voos.py` | Cadastro, validação, bloqueio, assento ocupado e liberação |
 | `test_reservas.py` | Criação, dados pessoais, confirmação e cancelamento |
+| `test_web.py` | Entrega da interface web |
 
 ## Estrutura
 
@@ -154,7 +171,8 @@ app/
 ├── barramento.py   # barramento de eventos
 ├── contratos.py    # container e contratos entre módulos
 ├── eventos.py      # eventos de domínio
-└── modulos/        # voos, reservas, passageiros, pagamentos, notificacoes, saga
+├── modulos/        # voos, reservas, passageiros, pagamentos, notificacoes, saga
+└── web/index.html  # interface ELVoo
 docs/CONTRATOS.md
 tests/
 ```
@@ -164,6 +182,7 @@ tests/
 | Etapa | Responsável | Situação |
 |---|---|---|
 | Infraestrutura, Voos e Reservas | Erivelton | Concluído (`base-v1`) |
+| Interface web ELVoo | Erivelton | Concluída |
 | Passageiros, Pagamentos, Notificações e Saga | Liedson | Em desenvolvimento |
 | Implantação AWS e Azure | Erivelton | Planejada |
 
