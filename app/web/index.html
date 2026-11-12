@@ -1,0 +1,1026 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ELVoo · Reservas Aéreas</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%230f766e'/%3E%3Cpath d='M9 25.5 31 12.5c1.6-.9 3.4.9 2.4 2.4L21 31.5l-2.6-7.2L9 25.5Z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --tinta: #0e2a33;
+  --tinta-suave: #4a636b;
+  --petroleo: #0f766e;
+  --petroleo-escuro: #0b5751;
+  --menta: #d8f1ec;
+  --coral: #ff6a3d;
+  --coral-suave: #ffe6dc;
+  --areia: #fbf6ef;
+  --branco: #ffffff;
+  --borda: #e6ddd1;
+  --ok: #15803d;
+  --ok-fundo: #dcfce7;
+  --alerta: #b45309;
+  --alerta-fundo: #fef3c7;
+  --erro: #b91c1c;
+  --erro-fundo: #fee2e2;
+  --raio: 18px;
+  --sombra: 0 18px 40px -22px rgba(14, 42, 51, .35);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  color: var(--tinta);
+  background: var(--areia);
+  line-height: 1.5;
+}
+img, svg { max-width: 100%; }
+a { color: inherit; }
+button, input, select { font: inherit; }
+[hidden] { display: none !important; }
+.container { width: min(1180px, 100% - 32px); margin-inline: auto; }
+
+/* Cabeçalho */
+.topo {
+  position: sticky; top: 0; z-index: 20;
+  background: rgba(251, 246, 239, .9);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--borda);
+}
+.topo .container { display: flex; align-items: center; gap: 24px; min-height: 68px; }
+.marca { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.45rem; text-decoration: none; letter-spacing: -.02em; }
+.marca span b { color: var(--coral); }
+.menu { display: flex; gap: 6px; margin-left: auto; padding: 5px; background: var(--branco); border: 1px solid var(--borda); border-radius: 999px; }
+.menu a { text-decoration: none; padding: 7px 14px; border-radius: 999px; font-size: .92rem; color: var(--tinta-suave); }
+.menu a:hover { background: var(--menta); color: var(--tinta); }
+
+/* Botões */
+.botao {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 0; border-radius: 12px; padding: 12px 20px;
+  background: var(--petroleo); color: var(--branco);
+  font-weight: 600; cursor: pointer; text-decoration: none;
+  transition: background .15s, transform .15s;
+}
+.botao:hover { background: var(--petroleo-escuro); }
+.botao:active { transform: translateY(1px); }
+.botao:disabled { opacity: .55; cursor: not-allowed; }
+.botao[aria-busy="true"] { cursor: progress; opacity: .75; }
+.botao[aria-busy="true"]::after {
+  content: ""; width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent;
+  animation: girar .7s linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+.botao.coral { background: var(--coral); }
+.botao.coral:hover { background: #ec5427; }
+.botao.claro { background: var(--branco); color: var(--tinta); border: 1px solid var(--borda); }
+.botao.claro:hover { background: var(--menta); }
+.botao.pequeno { padding: 8px 14px; font-size: .9rem; border-radius: 10px; }
+
+/* Hero */
+.hero { padding: 56px 0 120px; overflow: hidden; }
+.hero .container { display: grid; grid-template-columns: 1.05fr .95fr; gap: 40px; align-items: center; }
+.etiqueta {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 999px;
+  background: var(--coral-suave); color: #b23f17;
+  font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+}
+.hero h1 { font-size: clamp(2.6rem, 6vw, 4.6rem); line-height: 1.02; margin: 18px 0; letter-spacing: -.04em; }
+.hero h1 .destaque {
+  display: inline-block; padding: 0 18px 6px; border-radius: 999px;
+  background: linear-gradient(120deg, var(--petroleo), #14b8a6);
+  color: var(--branco);
+}
+.hero p.lead { color: var(--tinta-suave); font-size: 1.1rem; max-width: 520px; }
+.acoes { display: flex; gap: 12px; flex-wrap: wrap; margin: 26px 0 34px; }
+.numeros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 520px; }
+.numero { background: var(--branco); border: 1px solid var(--borda); border-radius: 16px; padding: 14px 16px; }
+.numero strong { display: block; font-size: 1.8rem; line-height: 1.1; }
+.numero span { color: var(--tinta-suave); font-size: .85rem; }
+.ilustracao { position: relative; }
+.ilustracao svg.cena { width: 100%; height: auto; display: block; filter: drop-shadow(0 30px 40px rgba(14,42,51,.18)); }
+.cartao-embarque {
+  position: absolute; left: -18px; bottom: 26px;
+  display: flex; gap: 12px; align-items: center;
+  background: var(--branco); border-radius: 16px; padding: 12px 16px;
+  box-shadow: var(--sombra); font-size: .85rem;
+  animation: flutuar 5s ease-in-out infinite;
+}
+.cartao-embarque strong { display: block; font-size: 1.05rem; }
+@keyframes flutuar { 50% { transform: translateY(-8px); } }
+
+/* Busca */
+.busca {
+  position: relative; z-index: 2;
+  margin-top: -80px;
+  background: var(--branco); border: 1px solid var(--borda);
+  border-radius: 24px; box-shadow: var(--sombra); padding: 22px;
+}
+.abas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
+.aba {
+  border: 1px solid var(--borda); background: var(--areia); color: var(--tinta);
+  border-radius: 12px; padding: 11px; font-weight: 600; cursor: pointer;
+}
+.aba[aria-selected="true"] { background: var(--tinta); color: var(--branco); border-color: var(--tinta); }
+.campos { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 12px; align-items: end; }
+.campos.consulta { grid-template-columns: 1fr auto; }
+.campo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.campo label { font-size: .8rem; font-weight: 600; color: var(--tinta-suave); text-transform: uppercase; letter-spacing: .05em; }
+.campo input {
+  width: 100%; border: 1px solid var(--borda); border-radius: 12px;
+  padding: 12px 14px; background: var(--areia); color: var(--tinta);
+}
+.campo input:focus { outline: 2px solid var(--petroleo); outline-offset: 1px; background: var(--branco); }
+.campo small { color: var(--tinta-suave); font-size: .78rem; }
+
+/* Seções */
+section.bloco { padding: 64px 0 0; }
+.titulo-secao { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+.titulo-secao h2 { font-size: clamp(1.7rem, 3.5vw, 2.4rem); margin: 6px 0 0; letter-spacing: -.03em; }
+.titulo-secao p { margin: 6px 0 0; color: var(--tinta-suave); }
+.sobretitulo { color: var(--coral); font-weight: 700; font-size: .82rem; letter-spacing: .08em; text-transform: uppercase; }
+
+/* Voos */
+.grade-voos { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.voo {
+  background: var(--branco); border: 1px solid var(--borda); border-radius: var(--raio);
+  overflow: hidden; display: flex; flex-direction: column;
+  transition: transform .15s, box-shadow .15s;
+}
+.voo:hover { transform: translateY(-3px); box-shadow: var(--sombra); }
+.voo.ativo { outline: 3px solid var(--coral); }
+.voo .capa { height: 92px; position: relative; }
+.voo .capa svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.voo .codigo {
+  position: absolute; top: 12px; left: 12px;
+  background: rgba(255,255,255,.92); border-radius: 999px; padding: 3px 10px;
+  font-size: .78rem; font-weight: 700; letter-spacing: .05em;
+}
+.voo .corpo { padding: 16px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+.rota { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.05rem; }
+.rota span { min-width: 0; overflow-wrap: anywhere; }
+.rota svg { flex: none; color: var(--coral); }
+.voo .rodape { display: flex; justify-content: space-between; align-items: end; gap: 10px; margin-top: auto; }
+.preco { font-size: 1.35rem; font-weight: 800; }
+.preco small { display: block; font-size: .75rem; font-weight: 500; color: var(--tinta-suave); }
+.livres { font-size: .82rem; padding: 4px 10px; border-radius: 999px; background: var(--menta); color: var(--petroleo-escuro); font-weight: 600; }
+.livres.zero { background: var(--erro-fundo); color: var(--erro); }
+.vazio {
+  border: 2px dashed var(--borda); border-radius: var(--raio); padding: 36px 20px;
+  text-align: center; color: var(--tinta-suave); background: var(--branco);
+}
+
+/* Reserva */
+.painel { background: var(--branco); border: 1px solid var(--borda); border-radius: 24px; padding: 24px; box-shadow: var(--sombra); }
+.reserva-grade { display: grid; grid-template-columns: 1.1fr .9fr; gap: 28px; }
+.passo { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font-size: 1.1rem; }
+.passo i {
+  font-style: normal; width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--tinta); color: var(--branco); font-size: .9rem;
+}
+.resumo-voo { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--areia); border-radius: 14px; padding: 12px 16px; margin-bottom: 16px; }
+.resumo-voo strong { font-size: 1.05rem; }
+.aviao { background: var(--areia); border-radius: 60px 60px 20px 20px; padding: 26px 16px 18px; overflow-x: auto; }
+.cabine { display: grid; gap: 8px; justify-content: center; }
+.fila { display: flex; gap: 8px; align-items: center; justify-content: center; }
+.fila .n { width: 26px; text-align: center; font-size: .78rem; color: var(--tinta-suave); font-weight: 600; }
+.corredor { width: 18px; }
+.assento {
+  width: 40px; height: 40px; border-radius: 10px 10px 6px 6px;
+  border: 1px solid var(--borda); background: var(--branco);
+  font-size: .75rem; font-weight: 700; cursor: pointer; color: var(--tinta);
+}
+.assento:hover:not(:disabled) { border-color: var(--petroleo); background: var(--menta); }
+.assento.bloqueado { background: #e7e1d8; color: #a59c90; cursor: not-allowed; text-decoration: line-through; }
+.assento.escolhido { background: var(--coral); border-color: var(--coral); color: var(--branco); }
+.assento.fantasma { visibility: hidden; }
+.legenda { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-top: 14px; font-size: .82rem; color: var(--tinta-suave); }
+.legenda span { display: inline-flex; align-items: center; gap: 6px; }
+.legenda i { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--borda); display: inline-block; }
+form.formulario { display: grid; gap: 14px; }
+.duas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.escolha { padding: 12px 14px; border-radius: 12px; background: var(--menta); font-weight: 600; }
+.escolha.nenhum { background: var(--areia); color: var(--tinta-suave); font-weight: 500; }
+
+/* Resultado */
+.bilhete {
+  display: grid; grid-template-columns: 1fr auto; gap: 14px;
+  border-radius: 18px; padding: 18px; margin-top: 18px;
+  background: linear-gradient(135deg, var(--tinta), #154552); color: var(--branco);
+}
+.bilhete .dados { display: grid; grid-template-columns: repeat(3, auto); gap: 6px 18px; font-size: .88rem; }
+.bilhete .dados b { display: block; font-size: 1.05rem; }
+.bilhete .dados span { opacity: .7; }
+.status {
+  align-self: start; padding: 5px 12px; border-radius: 999px;
+  font-size: .78rem; font-weight: 700; letter-spacing: .05em;
+}
+.status.PENDENTE { background: var(--alerta-fundo); color: var(--alerta); }
+.status.CONFIRMADA { background: var(--ok-fundo); color: var(--ok); }
+.status.CANCELADA { background: var(--erro-fundo); color: var(--erro); }
+.nota { font-size: .85rem; color: var(--tinta-suave); margin: 10px 0 0; }
+.bilhete .nota { color: rgba(255,255,255,.75); grid-column: 1 / -1; margin: 0; }
+.minhas { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.chip { border: 1px solid var(--borda); background: var(--branco); border-radius: 999px; padding: 5px 12px; cursor: pointer; font-size: .85rem; }
+.chip:hover { background: var(--menta); }
+
+/* Cadastro de voo */
+details.cadastro { background: var(--branco); border: 1px solid var(--borda); border-radius: var(--raio); padding: 4px 20px; }
+details.cadastro summary { cursor: pointer; padding: 14px 0; font-weight: 700; }
+details.cadastro form { padding-bottom: 20px; }
+.tres { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+/* Equipe */
+.equipe { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pessoa { display: flex; gap: 16px; align-items: start; background: var(--branco); border: 1px solid var(--borda); border-radius: var(--raio); padding: 20px; }
+.avatar { flex: none; width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; font-weight: 800; font-size: 1.3rem; color: var(--branco); }
+.pessoa h3 { margin: 0; }
+.pessoa p { margin: 4px 0 0; color: var(--tinta-suave); font-size: .92rem; }
+
+footer { margin-top: 72px; padding: 28px 0; background: var(--tinta); color: rgba(255,255,255,.75); font-size: .9rem; }
+footer .container { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: center; }
+footer .marca { color: var(--branco); font-size: 1.2rem; }
+
+/* Aviso flutuante */
+.avisos { position: fixed; right: 16px; bottom: 16px; display: grid; gap: 10px; z-index: 50; max-width: min(380px, calc(100% - 32px)); }
+.aviso { padding: 12px 16px; border-radius: 12px; background: var(--tinta); color: var(--branco); box-shadow: var(--sombra); font-size: .92rem; animation: entrar .2s ease-out; }
+.aviso.erro { background: var(--erro); }
+.aviso.ok { background: var(--ok); }
+@keyframes entrar { from { opacity: 0; transform: translateY(8px); } }
+
+@media (max-width: 920px) {
+  .hero .container, .reserva-grade { grid-template-columns: 1fr; }
+  .ilustracao { max-width: 520px; }
+  .campos { grid-template-columns: 1fr 1fr; }
+  .campos .botao { grid-column: 1 / -1; }
+  .menu { display: none; }
+}
+@media (max-width: 600px) {
+  .hero { padding-top: 32px; }
+  .numeros, .duas, .tres, .equipe { grid-template-columns: 1fr; }
+  .campos, .campos.consulta { grid-template-columns: 1fr; }
+  .bilhete { grid-template-columns: 1fr; }
+  .bilhete .dados { grid-template-columns: repeat(2, auto); }
+  .cartao-embarque { left: 8px; }
+  .assento { width: 34px; height: 34px; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-marca" viewBox="0 0 40 40">
+    <rect width="40" height="40" rx="12" fill="#0f766e"/>
+    <path d="M9 25.5 31 12.5c1.6-.9 3.4.9 2.4 2.4L21 31.5l-2.6-7.2L9 25.5Z" fill="#fff"/>
+    <path d="m18.4 24.3 4.4-4.9" stroke="#ff6a3d" stroke-width="2.4" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="i-seta" viewBox="0 0 24 24">
+    <path d="M3 12h15m-5-5 5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="i-bilhete" viewBox="0 0 24 24">
+    <path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2.5a2.5 2.5 0 0 0 0 5V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2.5a2.5 2.5 0 0 0 0-5V7Z" fill="none" stroke="currentColor" stroke-width="2"/>
+    <path d="M14 6v12" stroke="currentColor" stroke-width="2" stroke-dasharray="2 2.4"/>
+  </symbol>
+  <symbol id="i-lupa" viewBox="0 0 24 24">
+    <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/>
+    <path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="i-bussola" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
+    <path d="m15.5 8.5-2 5-5 2 2-5 5-2Z" fill="currentColor"/>
+  </symbol>
+</svg>
+
+<header class="topo">
+  <div class="container">
+    <a class="marca" href="#inicio" aria-label="ELVoo, início">
+      <svg width="36" height="36"><use href="#i-marca"/></svg>
+      <span>EL<b>Voo</b></span>
+    </a>
+    <nav class="menu" aria-label="Principal">
+      <a href="#voos">Voos</a>
+      <a href="#reservar">Reservar</a>
+      <a href="#busca" data-aba="consulta">Minha reserva</a>
+      <a href="#equipe">Equipe</a>
+    </nav>
+    <a class="botao pequeno coral" href="#voos">
+      <svg width="18" height="18"><use href="#i-bilhete"/></svg> Reservar
+    </a>
+  </div>
+</header>
+
+<main id="inicio">
+  <section class="hero">
+    <div class="container">
+      <div>
+        <span class="etiqueta">
+          <svg width="16" height="16"><use href="#i-bussola"/></svg> Sua próxima decolagem
+        </span>
+        <h1>Voe além do <span class="destaque">horizonte</span></h1>
+        <p class="lead">Escolha o voo, marque o assento no mapa da cabine e garanta a sua reserva em poucos passos. Simples, rápido e seguro.</p>
+        <div class="acoes">
+          <a class="botao" href="#voos">
+            <svg width="18" height="18"><use href="#i-lupa"/></svg> Ver voos
+          </a>
+          <a class="botao claro" href="#busca" data-aba="consulta">Consultar reserva</a>
+        </div>
+        <div class="numeros" aria-live="polite">
+          <div class="numero"><strong id="n-voos">0</strong><span>voos disponíveis</span></div>
+          <div class="numero"><strong id="n-assentos">0</strong><span>assentos livres</span></div>
+          <div class="numero"><strong id="n-destinos">0</strong><span>destinos</span></div>
+        </div>
+      </div>
+
+      <div class="ilustracao" aria-hidden="true">
+        <svg class="cena" viewBox="0 0 520 440">
+          <defs>
+            <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ffb18f"/>
+              <stop offset=".55" stop-color="#ffd9b8"/>
+              <stop offset="1" stop-color="#fdf0e2"/>
+            </linearGradient>
+            <clipPath id="janela"><rect x="40" y="20" width="440" height="400" rx="200"/></clipPath>
+          </defs>
+          <g clip-path="url(#janela)">
+            <rect x="0" y="0" width="520" height="440" fill="url(#ceu)"/>
+            <circle cx="350" cy="190" r="62" fill="#ff6a3d" opacity=".9"/>
+            <path d="M40 300c70-40 120-48 190-22s140 18 250-30v192H40Z" fill="#14b8a6" opacity=".55"/>
+            <path d="M40 340c90-38 160-30 230-6s130 10 210-26v132H40Z" fill="#0f766e"/>
+            <path d="M40 380c80-22 170-20 250 0s140 6 190-12v92H40Z" fill="#0e2a33"/>
+            <g fill="#fff" opacity=".9">
+              <ellipse cx="140" cy="130" rx="46" ry="14"/>
+              <ellipse cx="170" cy="120" rx="30" ry="14"/>
+              <ellipse cx="400" cy="95" rx="38" ry="11"/>
+            </g>
+            <path d="M70 250C170 160 270 210 380 120" fill="none" stroke="#0e2a33" stroke-width="2.5" stroke-dasharray="6 9" opacity=".5"/>
+            <g transform="translate(380 120) rotate(-28)">
+              <path d="M-30 0c0-5 4-7 9-7h36c10 0 18 3 18 7s-8 7-18 7h-36c-5 0-9-2-9-7Z" fill="#fff"/>
+              <path d="M2-6 16-30h8L18-6Z M2 6l14 24h8L18 6Z" fill="#fff"/>
+              <path d="M-26-4-32-16h6l8 9Z" fill="#ff6a3d"/>
+              <circle cx="22" cy="-1.5" r="2" fill="#0e2a33"/>
+              <circle cx="14" cy="-1.5" r="2" fill="#0e2a33"/>
+            </g>
+          </g>
+          <rect x="40" y="20" width="440" height="400" rx="200" fill="none" stroke="#fff" stroke-width="14"/>
+        </svg>
+        <div class="cartao-embarque">
+          <svg width="40" height="40"><use href="#i-marca"/></svg>
+          <div><span>Próximo embarque</span><strong id="cartao-rota">Escolha seu destino</strong></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="container">
+    <div class="busca" id="busca">
+      <div class="abas" role="tablist">
+        <button class="aba" role="tab" id="aba-busca" aria-selected="true" aria-controls="painel-busca">Buscar voos</button>
+        <button class="aba" role="tab" id="aba-consulta" aria-selected="false" aria-controls="painel-consulta">Minha reserva</button>
+      </div>
+
+      <form id="painel-busca" class="campos" role="tabpanel" aria-labelledby="aba-busca">
+        <div class="campo">
+          <label for="f-origem">Origem</label>
+          <input id="f-origem" placeholder="De onde você sai?" autocomplete="off">
+        </div>
+        <div class="campo">
+          <label for="f-destino">Destino</label>
+          <input id="f-destino" placeholder="Para onde vai?" autocomplete="off">
+        </div>
+        <div class="campo">
+          <label for="f-preco">Preço máximo (R$)</label>
+          <input id="f-preco" type="number" min="0" step="0.01" placeholder="Sem limite">
+        </div>
+        <button class="botao coral" type="submit">
+          <svg width="18" height="18"><use href="#i-lupa"/></svg> Buscar
+        </button>
+      </form>
+
+      <div id="painel-consulta" role="tabpanel" aria-labelledby="aba-consulta" hidden>
+        <form id="form-consulta" class="campos consulta">
+          <div class="campo">
+            <label for="c-id">Número da reserva</label>
+            <input id="c-id" type="number" min="1" step="1" required placeholder="Ex.: 1">
+          </div>
+          <button class="botao coral" type="submit">Consultar</button>
+        </form>
+        <div class="minhas" id="minhas"></div>
+        <div id="resultado-consulta"></div>
+      </div>
+    </div>
+  </div>
+
+  <section class="bloco" id="voos">
+    <div class="container">
+      <div class="titulo-secao">
+        <div>
+          <span class="sobretitulo">Voos disponíveis</span>
+          <h2>Para onde vamos hoje?</h2>
+        </div>
+        <button class="botao claro pequeno" id="recarregar" type="button">Atualizar lista</button>
+      </div>
+      <div class="grade-voos" id="lista-voos"></div>
+    </div>
+  </section>
+
+  <section class="bloco" id="reservar">
+    <div class="container">
+      <div class="titulo-secao">
+        <div>
+          <span class="sobretitulo">Reserva</span>
+          <h2>Escolha o assento e confirme</h2>
+        </div>
+      </div>
+
+      <div class="vazio" id="sem-voo">Selecione um voo na lista acima para ver o mapa de assentos.</div>
+
+      <div class="painel" id="painel-reserva" hidden>
+        <div class="resumo-voo" id="resumo-voo"></div>
+        <div class="reserva-grade">
+          <div>
+            <h3 class="passo"><i>1</i> Assento</h3>
+            <div class="aviao"><div class="cabine" id="cabine"></div></div>
+            <div class="legenda">
+              <span><i></i> Livre</span>
+              <span><i style="background:#ff6a3d;border-color:#ff6a3d"></i> Escolhido</span>
+              <span><i style="background:#e7e1d8"></i> Ocupado</span>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="passo"><i>2</i> Passageiro</h3>
+            <form class="formulario" id="form-reserva" novalidate>
+              <div class="escolha nenhum" id="escolha">Nenhum assento escolhido</div>
+              <div class="campo">
+                <label for="p-nome">Nome completo</label>
+                <input id="p-nome" required minlength="2" maxlength="120" autocomplete="name">
+              </div>
+              <div class="duas">
+                <div class="campo">
+                  <label for="p-documento">Documento</label>
+                  <input id="p-documento" required minlength="5" maxlength="30" pattern="[A-Za-z0-9.\-]{5,30}" placeholder="CPF ou passaporte">
+                  <small>Letras, números, ponto e hífen</small>
+                </div>
+                <div class="campo">
+                  <label for="p-email">E-mail</label>
+                  <input id="p-email" type="email" required maxlength="120" autocomplete="email">
+                </div>
+              </div>
+              <button class="botao coral" type="submit" id="confirmar" disabled>
+                <svg width="18" height="18"><use href="#i-bilhete"/></svg> Confirmar reserva
+              </button>
+            </form>
+            <div id="resultado-reserva"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bloco">
+    <div class="container">
+      <details class="cadastro">
+        <summary>Cadastrar voo (área de demonstração)</summary>
+        <form class="formulario" id="form-voo" novalidate>
+          <div class="tres">
+            <div class="campo">
+              <label for="v-codigo">Código</label>
+              <input id="v-codigo" required minlength="3" maxlength="20" pattern="[A-Za-z0-9]{3,20}" placeholder="EL1020">
+            </div>
+            <div class="campo">
+              <label for="v-origem">Origem</label>
+              <input id="v-origem" required minlength="3" maxlength="50" placeholder="Fortaleza">
+            </div>
+            <div class="campo">
+              <label for="v-destino">Destino</label>
+              <input id="v-destino" required minlength="3" maxlength="50" placeholder="Recife">
+            </div>
+          </div>
+          <div class="tres">
+            <div class="campo">
+              <label for="v-preco">Preço (R$)</label>
+              <input id="v-preco" type="number" required min="0.01" max="100000" step="0.01" placeholder="799.90">
+            </div>
+            <div class="campo">
+              <label for="v-filas">Fileiras</label>
+              <input id="v-filas" type="number" required min="1" max="75" step="1" value="6">
+            </div>
+            <div class="campo">
+              <label for="v-letras">Letras por fileira</label>
+              <input id="v-letras" required pattern="[A-Za-z]{1,10}" value="ABCD">
+              <small>Até 300 assentos no total</small>
+            </div>
+          </div>
+          <div><button class="botao" type="submit">Cadastrar voo</button></div>
+        </form>
+      </details>
+    </div>
+  </section>
+
+  <section class="bloco" id="equipe">
+    <div class="container">
+      <div class="titulo-secao">
+        <div>
+          <span class="sobretitulo">Quem faz o ELVoo</span>
+          <h2>Equipe</h2>
+        </div>
+      </div>
+      <div class="equipe">
+        <article class="pessoa">
+          <div class="avatar" style="background:var(--petroleo)">E</div>
+          <div>
+            <h3>Francisco Erivelton</h3>
+            <p>Infraestrutura, barramento de eventos, módulos Voos e Reservas, interface web e implantação em nuvem.</p>
+          </div>
+        </article>
+        <article class="pessoa">
+          <div class="avatar" style="background:var(--coral)">L</div>
+          <div>
+            <h3>Liedson</h3>
+            <p>Módulos Passageiros, Pagamentos, Notificações e Saga, que confirma ou cancela cada reserva.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <span class="marca"><svg width="28" height="28"><use href="#i-marca"/></svg> ELVoo</span>
+    <span>Projeto acadêmico de reservas aéreas · Erivelton &amp; Liedson</span>
+  </div>
+</footer>
+
+<div class="avisos" id="avisos" aria-live="assertive"></div>
+
+<script>
+"use strict";
+
+const $ = (seletor) => document.querySelector(seletor);
+const moeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const ROTULOS = {
+  codigo: "Código", origem: "Origem", destino: "Destino", preco: "Preço", assentos: "Assentos",
+  voo_id: "Voo", assento: "Assento", nome: "Nome", documento: "Documento", email: "E-mail",
+};
+const PALETAS = [
+  ["#0f766e", "#14b8a6"], ["#ff6a3d", "#ffb18f"], ["#0e2a33", "#2f6f7e"],
+  ["#b45309", "#f59e0b"], ["#7c3aed", "#c4b5fd"], ["#be123c", "#fb7185"],
+];
+
+const estado = { voos: [], voo: null, assento: null, consultas: {} };
+
+function el(tag, atributos = {}, ...filhos) {
+  const no = document.createElement(tag);
+  for (const [chave, valor] of Object.entries(atributos)) {
+    if (chave === "class") no.className = valor;
+    else if (chave.startsWith("on")) no.addEventListener(chave.slice(2), valor);
+    else if (valor !== false && valor != null) no.setAttribute(chave, valor === true ? "" : valor);
+  }
+  for (const filho of filhos.flat()) {
+    if (filho == null || filho === false) continue;
+    no.append(filho instanceof Node ? filho : document.createTextNode(String(filho)));
+  }
+  return no;
+}
+
+function icone(id, tamanho = 18) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", tamanho);
+  svg.setAttribute("height", tamanho);
+  svg.setAttribute("aria-hidden", "true");
+  const uso = document.createElementNS("http://www.w3.org/2000/svg", "use");
+  uso.setAttribute("href", "#" + id);
+  svg.append(uso);
+  return svg;
+}
+
+function avisar(texto, tipo = "") {
+  const aviso = el("div", { class: "aviso " + tipo, role: "status" }, texto);
+  $("#avisos").append(aviso);
+  setTimeout(() => aviso.remove(), 4500);
+}
+
+class ErroApi extends Error {
+  constructor(status, mensagem) {
+    super(mensagem);
+    this.status = status;
+  }
+}
+
+function mensagemDeErro(dados, status) {
+  const detalhe = dados && dados.detail;
+  if (typeof detalhe === "string") return detalhe;
+  if (Array.isArray(detalhe) && detalhe.length) {
+    return detalhe.map((item) => {
+      const campo = Array.isArray(item.loc) ? item.loc.filter((p) => typeof p === "string").pop() : "";
+      const rotulo = ROTULOS[campo] || "Entrada";
+      return /repetid/i.test(item.msg || "") ? "Há assentos repetidos" : rotulo + " inválido";
+    }).filter((m, i, todos) => todos.indexOf(m) === i).join(". ");
+  }
+  return status >= 500 ? "Erro no servidor. Tente novamente." : "Não foi possível concluir a operação.";
+}
+
+async function api(metodo, rota, corpo) {
+  let resposta;
+  try {
+    resposta = await fetch(rota, {
+      method: metodo,
+      headers: corpo ? { "Content-Type": "application/json" } : {},
+      body: corpo ? JSON.stringify(corpo) : undefined,
+    });
+  } catch {
+    throw new ErroApi(0, "Sem conexão com o servidor.");
+  }
+  let dados = null;
+  try { dados = await resposta.json(); } catch { dados = null; }
+  if (!resposta.ok) throw new ErroApi(resposta.status, mensagemDeErro(dados, resposta.status));
+  return dados;
+}
+
+async function ocupado(botao, tarefa) {
+  if (botao.getAttribute("aria-busy") === "true") return;
+  botao.setAttribute("aria-busy", "true");
+  botao.disabled = true;
+  try {
+    await tarefa();
+  } finally {
+    botao.removeAttribute("aria-busy");
+    botao.disabled = false;
+  }
+}
+
+function paleta(voo) {
+  return PALETAS[voo.id % PALETAS.length];
+}
+
+function capa(voo) {
+  const [a, b] = paleta(voo);
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 300 92");
+  svg.setAttribute("preserveAspectRatio", "none");
+  svg.setAttribute("aria-hidden", "true");
+  const gid = "g" + voo.id;
+  svg.innerHTML =
+    `<defs><linearGradient id="${gid}" x1="0" x2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs>` +
+    `<rect width="300" height="92" fill="url(#${gid})"/>` +
+    `<path d="M0 70c60-20 110-22 170-6s90 8 130-10v38H0Z" fill="#fff" opacity=".18"/>` +
+    `<path d="M40 60C110 20 190 50 260 22" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="4 6" opacity=".7"/>` +
+    `<circle cx="260" cy="22" r="5" fill="#fff"/>`;
+  return svg;
+}
+
+function atualizarNumeros() {
+  const livres = estado.voos.reduce((total, voo) => total + voo.assentos_livres, 0);
+  const destinos = new Set(estado.voos.map((voo) => voo.destino.trim().toLowerCase()));
+  $("#n-voos").textContent = estado.voos.length;
+  $("#n-assentos").textContent = livres;
+  $("#n-destinos").textContent = destinos.size;
+  const primeiro = estado.voos.find((voo) => voo.assentos_livres > 0);
+  $("#cartao-rota").textContent = primeiro ? `${primeiro.origem} → ${primeiro.destino}` : "Escolha seu destino";
+}
+
+function normalizar(texto) {
+  return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+}
+
+function filtrarVoos() {
+  const origem = normalizar($("#f-origem").value);
+  const destino = normalizar($("#f-destino").value);
+  const preco = parseFloat($("#f-preco").value);
+  return estado.voos.filter((voo) =>
+    (!origem || normalizar(voo.origem).includes(origem)) &&
+    (!destino || normalizar(voo.destino).includes(destino)) &&
+    (Number.isNaN(preco) || voo.preco <= preco)
+  );
+}
+
+function desenharVoos() {
+  const lista = $("#lista-voos");
+  const voos = filtrarVoos();
+  lista.replaceChildren();
+  if (!estado.voos.length) {
+    lista.append(el("div", { class: "vazio", style: "grid-column: 1 / -1" },
+      "Nenhum voo cadastrado ainda. Use a área “Cadastrar voo” mais abaixo."));
+    return;
+  }
+  if (!voos.length) {
+    lista.append(el("div", { class: "vazio", style: "grid-column: 1 / -1" },
+      "Nenhum voo encontrado com esses filtros."));
+    return;
+  }
+  for (const voo of voos) {
+    const semLugar = voo.assentos_livres === 0;
+    lista.append(el("article", { class: "voo" + (estado.voo && estado.voo.id === voo.id ? " ativo" : "") },
+      el("div", { class: "capa" }, capa(voo), el("span", { class: "codigo" }, voo.codigo)),
+      el("div", { class: "corpo" },
+        el("div", { class: "rota" }, el("span", {}, voo.origem), icone("i-seta", 20), el("span", {}, voo.destino)),
+        el("div", { class: "rodape" },
+          el("div", { class: "preco" }, el("small", {}, "a partir de"), moeda.format(voo.preco)),
+          el("span", { class: "livres" + (semLugar ? " zero" : "") },
+            semLugar ? "Lotado" : `${voo.assentos_livres} livre${voo.assentos_livres === 1 ? "" : "s"}`)
+        ),
+        el("button", { class: "botao pequeno", type: "button", disabled: semLugar, onclick: () => escolherVoo(voo.id) },
+          semLugar ? "Sem assentos" : "Escolher assento")
+      )
+    ));
+  }
+}
+
+async function carregarVoos() {
+  try {
+    estado.voos = await api("GET", "/voos");
+  } catch (erro) {
+    avisar(erro.message, "erro");
+  }
+  atualizarNumeros();
+  desenharVoos();
+}
+
+function separarAssento(numero) {
+  const partes = /^(\d+)([A-Z])$/.exec(numero);
+  return partes ? { fila: Number(partes[1]), letra: partes[2] } : null;
+}
+
+function desenharCabine() {
+  const cabine = $("#cabine");
+  cabine.replaceChildren();
+  const porFila = new Map();
+  const letras = new Set();
+  for (const assento of estado.voo.assentos) {
+    const pos = separarAssento(assento.numero);
+    if (!pos) continue;
+    letras.add(pos.letra);
+    if (!porFila.has(pos.fila)) porFila.set(pos.fila, new Map());
+    porFila.get(pos.fila).set(pos.letra, assento);
+  }
+  const colunas = [...letras].sort();
+  const corredor = Math.ceil(colunas.length / 2);
+  for (const fila of [...porFila.keys()].sort((a, b) => a - b)) {
+    const linha = el("div", { class: "fila" }, el("span", { class: "n" }, fila));
+    colunas.forEach((letra, indice) => {
+      if (indice === corredor && colunas.length > 1) linha.append(el("span", { class: "corredor" }));
+      const assento = porFila.get(fila).get(letra);
+      if (!assento) {
+        linha.append(el("span", { class: "assento fantasma" }));
+        return;
+      }
+      const livre = assento.status === "LIVRE";
+      const escolhido = estado.assento === assento.numero;
+      linha.append(el("button", {
+        type: "button",
+        class: "assento" + (livre ? "" : " bloqueado") + (escolhido ? " escolhido" : ""),
+        disabled: !livre,
+        "aria-pressed": escolhido ? "true" : "false",
+        "aria-label": `Assento ${assento.numero}${livre ? "" : ", ocupado"}`,
+        title: livre ? `Assento ${assento.numero}` : "Ocupado",
+        onclick: () => escolherAssento(assento.numero),
+      }, letra));
+    });
+    linha.append(el("span", { class: "n" }, fila));
+    cabine.append(linha);
+  }
+}
+
+function desenharEscolha() {
+  const caixa = $("#escolha");
+  if (estado.assento) {
+    caixa.className = "escolha";
+    caixa.textContent = `Assento ${estado.assento} · ${estado.voo.codigo} · ${moeda.format(estado.voo.preco)}`;
+  } else {
+    caixa.className = "escolha nenhum";
+    caixa.textContent = "Nenhum assento escolhido";
+  }
+  $("#confirmar").disabled = !estado.assento;
+}
+
+function escolherAssento(numero) {
+  estado.assento = estado.assento === numero ? null : numero;
+  desenharCabine();
+  desenharEscolha();
+}
+
+async function escolherVoo(vooId, rolar = true) {
+  try {
+    const voo = await api("GET", `/voos/${vooId}`);
+    const mudouVoo = !estado.voo || estado.voo.id !== voo.id;
+    estado.voo = voo;
+    const aindaLivre = voo.assentos.some((a) => a.numero === estado.assento && a.status === "LIVRE");
+    if (mudouVoo || !aindaLivre) estado.assento = null;
+    if (mudouVoo) $("#resultado-reserva").replaceChildren();
+
+    const livres = voo.assentos.filter((a) => a.status === "LIVRE").length;
+    $("#resumo-voo").replaceChildren(
+      el("div", {}, el("span", { class: "sobretitulo" }, voo.codigo), el("br"),
+        el("strong", {}, `${voo.origem} → ${voo.destino}`)),
+      el("div", {}, el("span", {}, "Preço"), el("br"), el("strong", {}, moeda.format(voo.preco))),
+      el("div", {}, el("span", {}, "Assentos livres"), el("br"), el("strong", {}, `${livres} de ${voo.assentos.length}`))
+    );
+    $("#sem-voo").hidden = true;
+    $("#painel-reserva").hidden = false;
+    desenharCabine();
+    desenharEscolha();
+    desenharVoos();
+    if (rolar) $("#reservar").scrollIntoView({ behavior: "smooth" });
+  } catch (erro) {
+    avisar(erro.status === 404 ? "Este voo não existe mais." : erro.message, "erro");
+    carregarVoos();
+  }
+}
+
+function bilhete(reserva, voo) {
+  const rota = voo ? `${voo.origem} → ${voo.destino}` : `Voo ${reserva.voo_id}`;
+  const notas = {
+    PENDENTE: "Assento reservado. Aguardando a confirmação do pagamento.",
+    CONFIRMADA: "Reserva confirmada. Boa viagem!",
+    CANCELADA: "Reserva cancelada" + (reserva.motivo_cancelamento ? `: ${reserva.motivo_cancelamento}.` : "."),
+  };
+  return el("div", { class: "bilhete" },
+    el("div", { class: "dados" },
+      el("div", {}, el("span", {}, "Reserva"), el("b", {}, "#" + reserva.id)),
+      el("div", {}, el("span", {}, "Rota"), el("b", {}, rota)),
+      el("div", {}, el("span", {}, "Assento"), el("b", {}, reserva.assento)),
+      el("div", {}, el("span", {}, "Voo"), el("b", {}, voo ? voo.codigo : "#" + reserva.voo_id)),
+      el("div", {}, el("span", {}, "Passageiro"), el("b", {}, "#" + reserva.passageiro_id)),
+      el("div", {}, el("span", {}, "Valor"), el("b", {}, reserva.valor != null ? moeda.format(reserva.valor) : "—"))
+    ),
+    el("span", { class: "status " + reserva.status }, reserva.status),
+    el("p", { class: "nota" }, notas[reserva.status] || "")
+  );
+}
+
+function vooDaReserva(reserva) {
+  return estado.voos.find((voo) => voo.id === reserva.voo_id) ||
+    (estado.voo && estado.voo.id === reserva.voo_id ? estado.voo : null);
+}
+
+async function acompanhar(reservaId, destino, tentativas = 6) {
+  for (let i = 0; i < tentativas; i++) {
+    await new Promise((resolver) => setTimeout(resolver, 1500));
+    let reserva;
+    try {
+      reserva = await api("GET", `/reservas/${reservaId}`);
+    } catch {
+      return;
+    }
+    if (!destino.isConnected) return;
+    destino.replaceChildren(bilhete(reserva, vooDaReserva(reserva)));
+    if (reserva.status !== "PENDENTE") {
+      avisar(`Reserva #${reserva.id} ${reserva.status.toLowerCase()}.`, reserva.status === "CONFIRMADA" ? "ok" : "erro");
+      return;
+    }
+  }
+}
+
+function lerMinhas() {
+  try {
+    const salvas = JSON.parse(localStorage.getItem("elvoo-reservas") || "[]");
+    return Array.isArray(salvas) ? salvas.filter(Number.isInteger) : [];
+  } catch {
+    return [];
+  }
+}
+
+function guardarMinha(id) {
+  const lista = [id, ...lerMinhas().filter((x) => x !== id)].slice(0, 8);
+  try { localStorage.setItem("elvoo-reservas", JSON.stringify(lista)); } catch { /* armazenamento indisponível */ }
+  desenharMinhas();
+}
+
+function desenharMinhas() {
+  const minhas = lerMinhas();
+  $("#minhas").replaceChildren(...(minhas.length ? [el("span", { class: "nota", style: "margin:0;align-self:center" }, "Suas reservas:")] : []),
+    ...minhas.map((id) => el("button", { class: "chip", type: "button", onclick: () => consultar(id) }, "#" + id)));
+}
+
+async function consultar(id) {
+  $("#c-id").value = id;
+  const destino = $("#resultado-consulta");
+  try {
+    const reserva = await api("GET", `/reservas/${id}`);
+    destino.replaceChildren(bilhete(reserva, vooDaReserva(reserva)));
+  } catch (erro) {
+    destino.replaceChildren(el("p", { class: "nota" }, erro.status === 404 ? `Reserva #${id} não encontrada.` : erro.message));
+  }
+}
+
+function trocarAba(nome) {
+  const consulta = nome === "consulta";
+  $("#aba-busca").setAttribute("aria-selected", String(!consulta));
+  $("#aba-consulta").setAttribute("aria-selected", String(consulta));
+  $("#painel-busca").hidden = consulta;
+  $("#painel-consulta").hidden = !consulta;
+  if (consulta) $("#c-id").focus({ preventScroll: true });
+}
+
+$("#aba-busca").addEventListener("click", () => trocarAba("busca"));
+$("#aba-consulta").addEventListener("click", () => trocarAba("consulta"));
+document.querySelectorAll("[data-aba]").forEach((link) =>
+  link.addEventListener("click", () => trocarAba(link.dataset.aba)));
+
+$("#painel-busca").addEventListener("submit", (evento) => {
+  evento.preventDefault();
+  desenharVoos();
+  $("#voos").scrollIntoView({ behavior: "smooth" });
+});
+["#f-origem", "#f-destino", "#f-preco"].forEach((id) => $(id).addEventListener("input", desenharVoos));
+$("#recarregar").addEventListener("click", carregarVoos);
+
+$("#form-consulta").addEventListener("submit", (evento) => {
+  evento.preventDefault();
+  const id = Number($("#c-id").value);
+  if (!Number.isInteger(id) || id < 1) {
+    $("#c-id").reportValidity();
+    return;
+  }
+  consultar(id);
+});
+
+$("#form-reserva").addEventListener("submit", async (evento) => {
+  evento.preventDefault();
+  const form = evento.currentTarget;
+  if ($("#confirmar").getAttribute("aria-busy") === "true") return;
+  if (!estado.voo || !estado.assento) {
+    avisar("Escolha um assento no mapa.", "erro");
+    return;
+  }
+  if (!form.reportValidity()) return;
+  let reservaCriada = null;
+  await ocupado($("#confirmar"), async () => {
+    try {
+      reservaCriada = await api("POST", "/reservas", {
+        voo_id: estado.voo.id,
+        assento: estado.assento,
+        passageiro: {
+          nome: $("#p-nome").value.trim(),
+          documento: $("#p-documento").value.trim(),
+          email: $("#p-email").value.trim(),
+        },
+      });
+    } catch (erro) {
+      avisar(erro.message, "erro");
+    }
+  });
+  if (!reservaCriada) {
+    desenharEscolha();
+    return;
+  }
+  guardarMinha(reservaCriada.id);
+  const destino = $("#resultado-reserva");
+  destino.replaceChildren(bilhete(reservaCriada, estado.voo));
+  avisar(`Reserva #${reservaCriada.id} criada.`, "ok");
+  form.reset();
+  estado.assento = null;
+  await escolherVoo(estado.voo.id, false);
+  await carregarVoos();
+  acompanhar(reservaCriada.id, destino);
+});
+
+$("#form-voo").addEventListener("submit", async (evento) => {
+  evento.preventDefault();
+  const form = evento.currentTarget;
+  if (form.querySelector("[aria-busy=true]")) return;
+  if (!form.reportValidity()) return;
+  const filas = Number($("#v-filas").value);
+  const letras = [...new Set($("#v-letras").value.toUpperCase())];
+  const total = filas * letras.length;
+  if (total > 300) {
+    avisar(`São ${total} assentos; o limite é 300.`, "erro");
+    return;
+  }
+  const assentos = [];
+  for (let fila = 1; fila <= filas; fila++) {
+    for (const letra of letras) assentos.push(`${fila}${letra}`);
+  }
+  await ocupado(form.querySelector("button[type=submit]"), async () => {
+    try {
+      const voo = await api("POST", "/voos", {
+        codigo: $("#v-codigo").value.trim(),
+        origem: $("#v-origem").value.trim(),
+        destino: $("#v-destino").value.trim(),
+        preco: Number($("#v-preco").value),
+        assentos,
+      });
+      avisar(`Voo ${voo.codigo} cadastrado com ${assentos.length} assentos.`, "ok");
+      form.reset();
+      await carregarVoos();
+    } catch (erro) {
+      avisar(erro.message, "erro");
+    }
+  });
+});
+
+desenharMinhas();
+carregarVoos();
+</script>
+</body>
+</html>
