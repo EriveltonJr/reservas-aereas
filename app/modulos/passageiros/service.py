@@ -10,7 +10,7 @@ class PassageiroService:
         documentos = dados.documento.strip()
 
         if not documentos:
-            raise ValueError("Documentos inválidos")
+            raise ValueError("documento inválido")
 
         with sessao() as s:
             passageiro = s.scalar(select(Passageiro).where(Passageiro.documento == documentos))
