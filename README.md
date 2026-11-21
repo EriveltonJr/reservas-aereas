@@ -183,7 +183,7 @@ tests/
 |---|---|---|
 | Infraestrutura, Voos e Reservas | Erivelton | Concluído (`base-v1`) |
 | Interface web ELVoo | Erivelton | Concluída |
-| Passageiros, Pagamentos, Notificações e Saga | Liedson | Em desenvolvimento |
+| Passageiros, Pagamentos, Notificações e Saga | Liedson | Concluída |
 | Implantação AWS e Azure | Erivelton | Planejada |
 
 ## Referências
