@@ -1,69 +1,106 @@
-from app.barramento import Barramento
+from datetime import timedelta
+
+from sqlalchemy import update
+
+from app.banco import agora, sessao
 from app.eventos import (
-    AssentoBloqueado,
     PagamentoAprovado,
+    PagamentoEstornado,
     PagamentoRecusado,
+    PrazoPagamentoExpirado,
+    ReservaCancelada,
 )
-from app.modulos.pagamentos.service import PagamentoService
+from app.modulos.pagamentos import gateway
+from app.modulos.pagamentos.models import Cobranca
+from tests.apoio import CARTAO_APROVADO, CARTAO_RECUSADO, dados_cartao, dados_reserva, dados_voo
+
+MODULOS = ("voos", "reservas", "pagamentos")
 
 
-def evento_pagamento(valor: float = 500.0) -> AssentoBloqueado:
-    return AssentoBloqueado(
-        reserva_id=1,
-        voo_id=10,
-        assento="1A",
-        valor=valor,
-    )
+def preparar(s, preco=500.0):
+    voo_id = s.admin().post("/voos", json=dados_voo(preco=preco)).json()["id"]
+    cliente = s.cliente()
+    reserva = cliente.post("/reservas", json=dados_reserva(voo_id)).json()
+    return cliente, reserva
 
 
-def test_valor_igual_ao_voo_aprova_pagamento():
-    bus = Barramento()
-    publicados = []
-    bus.inscrever(PagamentoAprovado, publicados.append)
+def test_cartao_valido_aprova_e_confirma_reserva(sistema):
+    s = sistema(*MODULOS)
+    cliente, reserva = preparar(s, 1234.5)
 
-    servico = PagamentoService(bus)
-    servico.processar(evento_pagamento(500.0))
+    resposta = cliente.post(f"/pagamentos/{reserva['id']}", json=dados_cartao())
 
-    assert publicados == [PagamentoAprovado(1, 1, 500.0)]
-
-
-def test_valor_diferente_do_voo_recusa_pagamento():
-    bus = Barramento()
-    publicados = []
-    bus.inscrever(PagamentoRecusado, publicados.append)
-
-    servico = PagamentoService(bus)
-    servico.obter_valor_pagamento = lambda evento: 450.0
-    servico.processar(evento_pagamento(500.0))
-
-    assert len(publicados) == 1
-    assert publicados[0].reserva_id == 1
-    assert "diferente" in publicados[0].motivo
-    assert "500.00" in publicados[0].motivo
-    assert "450.00" in publicados[0].motivo
+    assert resposta.status_code == 200
+    pagamento = resposta.json()
+    assert (pagamento["status"], pagamento["bandeira"], pagamento["final_cartao"]) == ("PAGO", "Visa", "4242")
+    assert "numero" not in pagamento and "cvv" not in str(pagamento)
+    assert s.publicados(PagamentoAprovado)[0].valor == 1234.5
+    assert cliente.get(f"/reservas/{reserva['id']}").json()["status"] == "CONFIRMADA"
 
 
-def test_pagamento_repetido_para_a_mesma_reserva_e_ignorado():
-    bus = Barramento()
-    publicados = []
-    bus.inscrever(PagamentoAprovado, publicados.append)
+def test_cartao_recusado_mantem_reserva_pendente_para_nova_tentativa(sistema):
+    s = sistema(*MODULOS)
+    cliente, reserva = preparar(s)
 
-    servico = PagamentoService(bus)
-    evento = evento_pagamento(500.0)
-    servico.processar(evento)
-    servico.processar(evento)
+    recusado = cliente.post(f"/pagamentos/{reserva['id']}", json=dados_cartao(CARTAO_RECUSADO))
 
-    assert publicados == [PagamentoAprovado(1, 1, 500.0)]
+    assert recusado.status_code == 402
+    assert recusado.json()["detail"] == "Cartão recusado pelo banco emissor"
+    assert s.publicados(PagamentoRecusado)[0].reserva_id == reserva["id"]
+    assert cliente.get(f"/reservas/{reserva['id']}").json()["status"] == "PENDENTE"
+    assert cliente.post(f"/pagamentos/{reserva['id']}", json=dados_cartao()).status_code == 200
+    assert cliente.post(f"/pagamentos/{reserva['id']}", json=dados_cartao()).status_code == 409
 
 
-def test_valor_acima_do_limite_recusa_pagamento():
-    bus = Barramento()
-    publicados = []
-    bus.inscrever(PagamentoRecusado, publicados.append)
+def test_dados_de_cartao_invalidos_dao_422(sistema):
+    s = sistema(*MODULOS)
+    cliente, reserva = preparar(s)
+    rota = f"/pagamentos/{reserva['id']}"
 
-    servico = PagamentoService(bus)
-    servico.processar(evento_pagamento(6000.0))
+    assert cliente.post(rota, json=dados_cartao("4242 4242 4242 4241")).status_code == 422
+    assert cliente.post(rota, json=dados_cartao(validade="01/20")).status_code == 422
+    assert cliente.post(rota, json=dados_cartao(cvv="12")).status_code == 422
+    assert cliente.post(rota, json=dados_cartao("9999 9999 9999 9995")).status_code == 422
 
-    assert len(publicados) == 1
-    assert publicados[0].reserva_id == 1
-    assert "limite" in publicados[0].motivo
+
+def test_somente_o_dono_paga_e_consulta(sistema):
+    s = sistema(*MODULOS)
+    _, reserva = preparar(s)
+    outro = s.cliente("outro@exemplo.com")
+
+    assert outro.post(f"/pagamentos/{reserva['id']}", json=dados_cartao()).status_code == 404
+    assert outro.get(f"/pagamentos/{reserva['id']}").status_code == 404
+    assert s.client.get("/pagamentos").status_code == 401
+
+
+def test_prazo_vencido_expira_a_cobranca(sistema):
+    s = sistema(*MODULOS)
+    cliente, reserva = preparar(s)
+    with sessao() as banco:
+        banco.execute(update(Cobranca).values(prazo=agora() - timedelta(minutes=1)))
+        banco.commit()
+
+    resposta = cliente.post(f"/pagamentos/{reserva['id']}", json=dados_cartao())
+
+    assert resposta.status_code == 409
+    assert s.publicados(PrazoPagamentoExpirado) == [PrazoPagamentoExpirado(reserva["id"])]
+
+
+def test_cancelamento_de_reserva_paga_gera_estorno(sistema):
+    s = sistema(*MODULOS)
+    cliente, reserva = preparar(s)
+    cliente.post(f"/pagamentos/{reserva['id']}", json=dados_cartao())
+
+    s.bus.publicar(ReservaCancelada(reserva["id"], reserva["passageiro_id"], "Cancelada pelo cliente"))
+
+    assert s.publicados(PagamentoEstornado)[0].valor == 500.0
+    assert cliente.get(f"/pagamentos/{reserva['id']}").json()["status"] == "ESTORNADO"
+
+
+def test_validacao_de_cartao():
+    assert gateway.luhn_valido("4242424242424242")
+    assert not gateway.luhn_valido("4242424242424241")
+    assert gateway.bandeira("4242424242424242") == "Visa"
+    assert gateway.bandeira("5555555555554444") == "Mastercard"
+    assert gateway.bandeira("378282246310005") == "American Express"
+    assert gateway.autorizar(gateway.somente_digitos(CARTAO_APROVADO)) is None

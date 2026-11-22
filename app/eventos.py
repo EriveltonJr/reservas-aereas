@@ -13,6 +13,8 @@ class ReservaCriada(Evento):
     voo_id: int
     assento: str
     passageiro_id: int
+    conta_id: int | None = None
+    localizador: str = ""
 
 
 @dataclass(frozen=True)
@@ -43,10 +45,30 @@ class PagamentoRecusado(Evento):
 
 
 @dataclass(frozen=True)
+class PagamentoEstornado(Evento):
+    reserva_id: int
+    pagamento_id: int
+    valor: float
+
+
+@dataclass(frozen=True)
+class PrazoPagamentoExpirado(Evento):
+    reserva_id: int
+
+
+@dataclass(frozen=True)
 class ReservaConfirmada(Evento):
     reserva_id: int
     passageiro_id: int
     valor: float
+    conta_id: int | None = None
+    localizador: str = ""
+
+
+@dataclass(frozen=True)
+class CancelamentoSolicitado(Evento):
+    reserva_id: int
+    motivo: str
 
 
 @dataclass(frozen=True)
@@ -65,3 +87,5 @@ class ReservaCancelada(Evento):
     reserva_id: int
     passageiro_id: int
     motivo: str
+    conta_id: int | None = None
+    localizador: str = ""

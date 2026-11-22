@@ -1,53 +1,17 @@
-import importlib
+from datetime import timedelta
 
-import pytest
+from sqlalchemy import update
 
+from app.banco import agora, sessao
 from app.contratos import DadosPassageiro, PassageiroFalso
-from app.eventos import PagamentoRecusado
+from app.modulos.pagamentos.models import Cobranca
+from tests.apoio import CARTAO_RECUSADO, assentos, dados_cartao, dados_reserva, dados_voo
 
-MODULOS_LIEDSON = ("passageiros", "pagamentos", "notificacoes", "saga")
 TODOS = ("passageiros", "voos", "reservas", "pagamentos", "notificacoes", "saga")
-SEM_PAGAMENTOS = ("passageiros", "voos", "reservas", "notificacoes", "saga")
 
 
-def _modulos_prontos() -> bool:
-    return all(
-        callable(getattr(importlib.import_module(f"app.modulos.{nome}"), "registrar", None))
-        for nome in MODULOS_LIEDSON
-    )
-
-
-pytestmark = pytest.mark.skipif(
-    not _modulos_prontos(),
-    reason="aguardando os módulos Passageiros, Pagamentos, Notificações e Saga",
-)
-
-
-def criar_voo(client, codigo: str, preco: float = 500) -> int:
-    resposta = client.post(
-        "/voos",
-        json={"codigo": codigo, "origem": "Fortaleza", "destino": "Recife", "preco": preco, "assentos": ["1A", "1B"]},
-    )
-    assert resposta.status_code == 201
-    return resposta.json()["id"]
-
-
-def reservar(client, voo_id: int, assento: str = "1A", documento: str = "12345") -> dict:
-    resposta = client.post(
-        "/reservas",
-        json={
-            "voo_id": voo_id,
-            "assento": assento,
-            "passageiro": {"nome": "Ana Souza", "documento": documento, "email": "ana@exemplo.com"},
-        },
-    )
-    assert resposta.status_code == 201
-    return resposta.json()
-
-
-def status_assento(client, voo_id: int, numero: str) -> str:
-    assentos = client.get(f"/voos/{voo_id}").json()["assentos"]
-    return next(a["status"] for a in assentos if a["numero"] == numero)
+def titulos(client) -> list[str]:
+    return [n["titulo"] for n in client.get("/notificacoes").json()["itens"]]
 
 
 def test_passageiros_substitui_o_servico_provisorio(sistema):
@@ -63,51 +27,80 @@ def test_passageiros_substitui_o_servico_provisorio(sistema):
     assert outro != primeiro
 
 
-def test_reserva_termina_confirmada_ou_cancelada(sistema):
+def test_compra_completa_com_pagamento(sistema):
     s = sistema(*TODOS)
-    voo_id = criar_voo(s.client, "EL100", 500)
+    admin = s.admin()
+    voo_id = admin.post("/voos", json=dados_voo()).json()["id"]
+    cliente = s.cliente()
 
-    reserva = reservar(s.client, voo_id)
+    reserva = cliente.post("/reservas", json=dados_reserva(voo_id)).json()
+    assert reserva["status"] == "PENDENTE"
+    assert assentos(s.client, voo_id)["1A"] == "BLOQUEADO"
 
-    assert reserva["status"] in ("CONFIRMADA", "CANCELADA")
-    if reserva["status"] == "CONFIRMADA":
-        assert reserva["valor"] == 500
-        assert status_assento(s.client, voo_id, "1A") == "BLOQUEADO"
-    else:
-        assert status_assento(s.client, voo_id, "1A") == "LIVRE"
+    assert cliente.post(f"/pagamentos/{reserva['id']}", json=dados_cartao(CARTAO_RECUSADO)).status_code == 402
+    assert cliente.post(f"/pagamentos/{reserva['id']}", json=dados_cartao()).status_code == 200
+
+    confirmada = cliente.get(f"/reservas/{reserva['id']}").json()
+    assert (confirmada["status"], confirmada["valor"]) == ("CONFIRMADA", 500)
+    localizador = reserva["localizador"]
+    assert titulos(cliente) == [f"Reserva {localizador} confirmada", f"Reserva {localizador} criada"]
+    assert titulos(admin) == ["Pagamento recebido", "Pagamento recusado", f"Nova reserva {localizador}"]
 
 
-def test_saga_compensa_pagamento_recusado(sistema):
-    s = sistema(*SEM_PAGAMENTOS)
-    voo_id = criar_voo(s.client, "EL200")
-    reserva = reservar(s.client, voo_id)
-    assert status_assento(s.client, voo_id, "1A") == "BLOQUEADO"
+def test_cancelamento_pelo_cliente_libera_assento_e_estorna(sistema):
+    s = sistema(*TODOS)
+    admin = s.admin()
+    voo_id = admin.post("/voos", json=dados_voo()).json()["id"]
+    cliente = s.cliente()
+    reserva = cliente.post("/reservas", json=dados_reserva(voo_id)).json()
+    cliente.post(f"/pagamentos/{reserva['id']}", json=dados_cartao())
 
-    s.bus.publicar(PagamentoRecusado(reserva["id"], "Cartão recusado"))
+    cancelada = cliente.post(f"/reservas/{reserva['id']}/cancelar").json()
 
-    cancelada = s.client.get(f"/reservas/{reserva['id']}").json()
     assert cancelada["status"] == "CANCELADA"
-    assert cancelada["motivo_cancelamento"]
-    assert status_assento(s.client, voo_id, "1A") == "LIVRE"
+    assert assentos(s.client, voo_id)["1A"] == "LIVRE"
+    assert cliente.get(f"/pagamentos/{reserva['id']}").json()["status"] == "ESTORNADO"
+    assert titulos(admin)[0] == "Estorno solicitado"
+    assert cliente.post(f"/reservas/{reserva['id']}/cancelar").status_code == 409
 
 
-def test_saga_cancela_reserva_com_assento_ocupado(sistema):
-    s = sistema(*SEM_PAGAMENTOS)
-    voo_id = criar_voo(s.client, "EL300")
+def test_prazo_de_pagamento_vencido_cancela_e_libera_assento(sistema, monkeypatch):
+    monkeypatch.setattr("app.modulos.pagamentos.service.INTERVALO_VARREDURA", 0)
+    s = sistema(*TODOS)
+    voo_id = s.admin().post("/voos", json=dados_voo()).json()["id"]
+    cliente = s.cliente()
+    reserva = cliente.post("/reservas", json=dados_reserva(voo_id)).json()
+    with sessao() as banco:
+        banco.execute(update(Cobranca).values(prazo=agora() - timedelta(minutes=1)))
+        banco.commit()
 
-    primeira = reservar(s.client, voo_id, documento="11111")
-    segunda = reservar(s.client, voo_id, documento="22222")
+    cliente.get("/voos")
 
-    assert segunda["status"] == "CANCELADA"
+    expirada = cliente.get(f"/reservas/{reserva['id']}").json()
+    assert expirada["status"] == "CANCELADA"
+    assert expirada["motivo_cancelamento"] == "Prazo para pagamento expirado"
+    assert assentos(s.client, voo_id)["1A"] == "LIVRE"
+
+
+def test_assento_ocupado_cancela_a_segunda_reserva(sistema):
+    s = sistema(*TODOS)
+    voo_id = s.admin().post("/voos", json=dados_voo()).json()["id"]
+
+    primeira = s.cliente("ana@exemplo.com").post("/reservas", json=dados_reserva(voo_id, documento="11111")).json()
+    segunda = s.cliente("bruno@exemplo.com").post("/reservas", json=dados_reserva(voo_id, documento="22222")).json()
+
     assert primeira["status"] == "PENDENTE"
-    assert status_assento(s.client, voo_id, "1A") == "BLOQUEADO"
+    assert segunda["status"] == "CANCELADA"
+    assert segunda["motivo_cancelamento"] == "Assento já ocupado"
+    assert assentos(s.client, voo_id)["1A"] == "BLOQUEADO"
 
 
 def test_mesmo_documento_reaproveita_passageiro_nas_reservas(sistema):
     s = sistema(*TODOS)
-    voo_id = criar_voo(s.client, "EL400")
+    voo_id = s.admin().post("/voos", json=dados_voo()).json()["id"]
+    cliente = s.cliente()
 
-    primeira = reservar(s.client, voo_id, "1A")
-    segunda = reservar(s.client, voo_id, "1B")
+    primeira = cliente.post("/reservas", json=dados_reserva(voo_id, "1A")).json()
+    segunda = cliente.post("/reservas", json=dados_reserva(voo_id, "1B")).json()
 
     assert primeira["passageiro_id"] == segunda["passageiro_id"]

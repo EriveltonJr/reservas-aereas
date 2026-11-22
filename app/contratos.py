@@ -10,6 +10,7 @@ from sqlalchemy.engine import Engine
 from app.barramento import Barramento
 
 ORDEM_MODULOS = (
+    "contas",
     "passageiros",
     "voos",
     "reservas",
@@ -46,16 +47,39 @@ class PassageiroFalso:
         return self._por_documento[documento]
 
 
+@dataclass(frozen=True)
+class UsuarioAutenticado:
+    id: int
+    nome: str
+    email: str
+    papel: str
+
+    @property
+    def admin(self) -> bool:
+        return self.papel == "ADMIN"
+
+
+class AutenticacaoContrato(Protocol):
+    def usuario_por_token(self, token: str) -> UsuarioAutenticado | None:
+        """Devolve o usuário dono de uma sessão válida."""
+
+
 class Container:
     def __init__(self, engine: Engine, bus: Barramento, passageiros: PassageirosContrato) -> None:
         self.engine = engine
         self.bus = bus
         self.passageiros = passageiros
+        self.autenticacao: AutenticacaoContrato | None = None
 
     def registrar_passageiros(self, servico: PassageirosContrato) -> None:
         if not callable(getattr(servico, "criar_ou_validar", None)):
             raise TypeError("o serviço de passageiros deve implementar criar_ou_validar")
         self.passageiros = servico
+
+    def registrar_autenticacao(self, servico: AutenticacaoContrato) -> None:
+        if not callable(getattr(servico, "usuario_por_token", None)):
+            raise TypeError("o serviço de autenticação deve implementar usuario_por_token")
+        self.autenticacao = servico
 
 
 def aplicar_registro(modulo: object, app: FastAPI, bus: Barramento, container: Container) -> bool:

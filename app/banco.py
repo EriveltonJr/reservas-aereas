@@ -1,6 +1,7 @@
 import os
 from collections.abc import Generator
 from contextlib import contextmanager
+from datetime import UTC, datetime
 
 from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
@@ -12,6 +13,14 @@ URL_PADRAO = "sqlite:///./reservas.db"
 
 class Base(DeclarativeBase):
     pass
+
+
+def agora() -> datetime:
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
+def iso_utc(momento: datetime | None) -> str | None:
+    return momento.replace(tzinfo=UTC).isoformat() if momento else None
 
 
 def criar_engine(url: str | None = None) -> Engine:

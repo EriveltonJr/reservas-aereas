@@ -1,4 +1,6 @@
-from sqlalchemy import ForeignKey, Numeric, String, UniqueConstraint
+from datetime import datetime
+
+from sqlalchemy import DateTime, ForeignKey, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.banco import Base
@@ -15,6 +17,8 @@ class Voo(Base):
     origem: Mapped[str] = mapped_column(String(50))
     destino: Mapped[str] = mapped_column(String(50))
     preco: Mapped[float] = mapped_column(Numeric(10, 2, asdecimal=False))
+    partida: Mapped[datetime] = mapped_column(DateTime, index=True)
+    chegada: Mapped[datetime] = mapped_column(DateTime)
 
 
 class Assento(Base):
