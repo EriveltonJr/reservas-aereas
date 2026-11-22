@@ -1,4 +1,3 @@
-"""Pagamentos: implemente registrar(app, bus, container), trate AssentoBloqueado e publique o resultado."""
 from app.eventos import AssentoBloqueado
 from app.modulos.pagamentos.service import PagamentoService
 

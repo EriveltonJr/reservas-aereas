@@ -54,3 +54,16 @@ def test_pagamento_repetido_para_a_mesma_reserva_e_ignorado():
     servico.processar(evento)
 
     assert publicados == [PagamentoAprovado(1, 1, 500.0)]
+
+
+def test_valor_acima_do_limite_recusa_pagamento():
+    bus = Barramento()
+    publicados = []
+    bus.inscrever(PagamentoRecusado, publicados.append)
+
+    servico = PagamentoService(bus)
+    servico.processar(evento_pagamento(6000.0))
+
+    assert len(publicados) == 1
+    assert publicados[0].reserva_id == 1
+    assert "limite" in publicados[0].motivo

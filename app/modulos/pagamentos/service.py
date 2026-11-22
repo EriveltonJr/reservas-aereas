@@ -1,6 +1,4 @@
-import os
-
-from numpy import isclose
+from math import isclose
 
 from app.barramento import Barramento
 from app.eventos import (
@@ -8,6 +6,8 @@ from app.eventos import (
     PagamentoAprovado,
     PagamentoRecusado,
 )
+
+LIMITE_APROVACAO = 5000.0
 
 class PagamentoService:
     def __init__(self, bus: Barramento) -> None:
@@ -32,6 +32,14 @@ class PagamentoService:
                         f"esperado R$ {valor_voo:.2f}, "
                         f"recebido R$ {valor_pago:.2f}"
                     ),))
+            return
+
+        if valor_pago > LIMITE_APROVACAO:
+            self._processados.add(evento.reserva_id)
+            self.bus.publicar(PagamentoRecusado(
+                reserva_id=evento.reserva_id,
+                motivo=f"Valor acima do limite de aprovação de R$ {LIMITE_APROVACAO:.2f}",
+            ))
             return
 
         self._processados.add(evento.reserva_id)

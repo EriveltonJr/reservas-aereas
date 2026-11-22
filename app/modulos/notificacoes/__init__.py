@@ -1,4 +1,3 @@
-"""Notificações: implemente registrar(app, bus, container) e assine eventos para avisos."""
 from app.eventos import ReservaCancelada, ReservaConfirmada
 from app.modulos.notificacoes.service import NotificacaoService
 

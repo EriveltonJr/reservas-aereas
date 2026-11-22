@@ -1,4 +1,3 @@
-"""Passageiros: implemente registrar(app, bus, container) e registre o serviço."""
 from app.modulos.passageiros import models
 from app.modulos.passageiros.service import PassageiroService
 

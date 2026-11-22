@@ -31,7 +31,7 @@ class PassageiroService:
             except IntegrityError:
                 s.rollback()
 
-                passageiro = s.scalar(select(Passageiro).where(Passageiro.documentos == documentos))
+                passageiro = s.scalar(select(Passageiro).where(Passageiro.documento == documentos))
             
                 if passageiro is None:
                     raise ValueError("Erro ao criar passageiro")

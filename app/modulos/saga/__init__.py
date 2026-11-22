@@ -1,4 +1,3 @@
-"""Saga: implemente registrar(app, bus, container) e coordene compensações via eventos."""
 from app.eventos import AssentoIndisponivel, PagamentoRecusado
 from app.modulos.saga.service import SagaService
 
