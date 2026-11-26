@@ -213,7 +213,7 @@ tests/
 | Interface web ELVoo | Erivelton | Concluída |
 | Contas, segurança, checkout e painel do admin | Erivelton | Concluído |
 | Passageiros, Pagamentos, Notificações e Saga | Liedson | Concluída |
-| Implantação AWS e Azure | Erivelton | Planejada |
+| Implantação AWS | Erivelton | Concluída |
 
 ## Referências
 
